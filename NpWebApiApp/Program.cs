@@ -11,7 +11,12 @@ List<Employee> employees = new()
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 
-app.MapGet("/", () => "Hello World!");
+app.MapGet("/", async (HttpContext context) =>
+{
+    context.Response.Cookies.Append("login", "leo");
+    context.Response.Cookies.Append("password", "qwerty");
+    await context.Response.WriteAsync("Hello world");
+});
 
 // Get list of employees
 app.MapGet("/api/empl", () => employees);
@@ -99,6 +104,10 @@ app.MapPost("/bindata", async (HttpContext context) =>
 
 app.MapPost("/bigform", async (HttpContext context) =>
 {
+    var form = context.Request.Form;
+    string? name = form["user_name"];
+    string? age = form["user_age"];
+
     IFormFileCollection files = context.Request.Form.Files;
     var uploadDir = $"{Directory.GetCurrentDirectory()}/upload";
     Directory.CreateDirectory(uploadDir);
@@ -111,7 +120,7 @@ app.MapPost("/bigform", async (HttpContext context) =>
             await file.CopyToAsync(stream);
         }
     }
-    await context.Response.WriteAsync("Files is upload");
+    await context.Response.WriteAsync($"Files is upload. Name: {name}, Age: {age}");
 
 });
 

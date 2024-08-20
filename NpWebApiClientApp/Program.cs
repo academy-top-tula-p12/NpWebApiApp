@@ -1,4 +1,5 @@
 ﻿using NpWebApiClientApp;
+using System.Net;
 using System.Net.Http.Json;
 
 HttpClient client = new();
@@ -32,6 +33,8 @@ while(true)
     Console.WriteLine("7 - Send Stream");
     Console.WriteLine("8 - Send Bytes");
     Console.WriteLine("9 - Send Big Form\n");
+
+    Console.WriteLine("10 - Log in\n");
 
     Console.WriteLine("0 - Quit");
 
@@ -173,12 +176,35 @@ while(true)
             break;
 
         case 9:
-            string filePath2 = $"{Directory.GetCurrentDirectory()}/book01.pdf";
+
+            StringContent contentName = new("Leopold");
+            StringContent contentAge = new("25");
+            
+            string[] filesNames = new[] { "book01.pdf", "book02.pdf", "book03.pdf", "image01.jpg" };
+
+            // string filePath2 = $"{Directory.GetCurrentDirectory()}/book01.pdf";
             using(MultipartFormDataContent contentData = new())
             {
-                var contentFiles = new StreamContent(File.OpenRead(filePath2));
-                contentFiles.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/pdf");
-                contentData.Add(contentFiles, name: "file", fileName: "mybook01.pdf");
+                contentData.Add(contentName, name: "user_name");
+                contentData.Add(contentAge, name: "user_age");
+
+                foreach (var fileName in filesNames)
+                {
+                    var fileFullName = Path.GetFileName(fileName);
+                    var contentFiles = new StreamContent(File.OpenRead(fileFullName));
+
+                    string extens = fileName.Substring(fileName.LastIndexOf('.') + 1);
+
+                    string mimeType = "text/plain";
+                    if (extens == "pdf") mimeType = "application/pdf";
+                    if (extens == "jpg") mimeType = "image/jpeg";
+
+                    contentFiles.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(mimeType);
+                    contentData.Add(contentFiles, name: "file", fileName: fileName);
+                }
+                
+                //byte[] buffer2 = await File.ReadAllBytesAsync(filePath2);
+                //var contentFiles = new ByteArrayContent(buffer2);
 
                 using(var response = await client.PostAsync($"{url}bigform", contentData))
                 {
@@ -187,6 +213,21 @@ while(true)
                 }
             }
             break;
+
+
+        case 10:
+            using (var response = await client.GetAsync(url))
+            {
+                CookieContainer container = new();
+                foreach (var cookie in response.Headers.GetValues("Set-Cookie"))
+                {
+                    container.SetCookies(new Uri(url), cookie);
+                }
+
+                foreach(Cookie cookie in container.GetCookies(new Uri(url)))
+                    Console.WriteLine($"Cookie key: {cookie.Name} -> value: {cookie.Value}");
+            }
+                break;
         default:
             break;
     }
